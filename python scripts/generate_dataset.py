@@ -21,12 +21,12 @@ def create_dataset(size, train_count, val_count):
     dataset_dir.mkdir(exist_ok=True)
 
     # test set
-    test_dir = dataset_dir / "test"
-    test_hr_dir = test_dir / "HR"
-    test_lr_dir = test_dir / "LR"
-    test_dir.mkdir(parents=True, exist_ok=True)
-    test_hr_dir.mkdir(parents=True, exist_ok=True)
-    test_lr_dir.mkdir(parents=True, exist_ok=True)
+    train_dir = dataset_dir / "test"
+    train_hr_dir = train_dir / "HR"
+    train_lr_dir = train_dir / "LR"
+    train_dir.mkdir(parents=True, exist_ok=True)
+    train_hr_dir.mkdir(parents=True, exist_ok=True)
+    train_lr_dir.mkdir(parents=True, exist_ok=True)
 
     # validation set
     val_dir = dataset_dir / "val"
@@ -40,10 +40,10 @@ def create_dataset(size, train_count, val_count):
     base_url = f"https://picsum.photos/{size}"
 
     # load training data
-    load_subset(train_count, base_url, Path(test_hr_dir), Path(test_lr_dir), size)
+    load_subset(train_count, base_url, train_hr_dir, train_lr_dir, size)
     
     # load validation data
-    load_subset(val_count, base_url, Path(val_hr_dir), Path(val_lr_dir), size)
+    load_subset(val_count, base_url, val_hr_dir, val_lr_dir, size)
     return
 
 def load_subset(count, base_url, hr_dir, lr_dir, size):
@@ -69,7 +69,7 @@ def pixelate(img_path, lr_dir, index, size):
         print(f"failed to load image: {img_path}")
         return
 
-    # create random pix factor in range [10,16]
+    # create random pix factor in range [4, 8]
     random_factor = random.randint(4, 8)
 
     # pixelate HR

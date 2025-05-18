@@ -1,0 +1,7 @@
+numpy
+matplotlib
+tensorflow
+tensorflow-datasets
+opencv-python
+tqdm
+requests

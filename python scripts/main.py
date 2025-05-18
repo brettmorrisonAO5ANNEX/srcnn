@@ -14,5 +14,18 @@ if __name__ == "__main__":
         print("Dataset already exists. Skipping download.")
 
     # create model
+    print("Creating model...")
+    try:
+        model = srcnn.create_model()
+    except Exception as e:
+        print(f"Error creating model: {e}")
+
     # train model
-    # test output
+    print("Training model...")
+    try:
+        srcnn.train_model(model, "dataset/train", "dataset/val", epochs=10)
+    except Exception as e:
+        print(f"Error training model: {e}")
+
+    # test model
+    srcnn.test_model()
