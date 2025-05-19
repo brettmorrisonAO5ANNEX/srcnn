@@ -4,6 +4,7 @@ from pathlib import Path
 import cv2
 import random
 from tqdm import tqdm
+import tensorflow as tf
 
 # creates an image dataset of the following structure
 # dataset
@@ -21,7 +22,7 @@ def create_dataset(size, train_count, val_count):
     dataset_dir.mkdir(exist_ok=True)
 
     # test set
-    train_dir = dataset_dir / "test"
+    train_dir = dataset_dir / "train"
     train_hr_dir = train_dir / "HR"
     train_lr_dir = train_dir / "LR"
     train_dir.mkdir(parents=True, exist_ok=True)
@@ -80,3 +81,30 @@ def pixelate(img_path, lr_dir, index, size):
     # save LR
     cv2.imwrite(str(file_path), pixelated)
     return
+
+# logic for converting dataset to tf.data.Dataset
+def load_image_pair(lr_path, hr_path):
+    # Read LR and HR images
+    lr = tf.io.read_file(lr_path)
+    hr = tf.io.read_file(hr_path)
+    lr = tf.image.decode_jpeg(lr, channels=3)
+    hr = tf.image.decode_jpeg(hr, channels=3)
+
+    # Convert to float32 and normalize to [0, 1]
+    lr = tf.image.convert_image_dtype(lr, tf.float32)
+    hr = tf.image.convert_image_dtype(hr, tf.float32)
+
+    return lr, hr
+
+def get_dataset(lr_dir, hr_dir, batch_size=8, shuffle=True):
+    lr_paths = sorted([str(p) for p in Path(lr_dir).glob("*.jpg")])
+    hr_paths = sorted([str(p) for p in Path(hr_dir).glob("*.jpg")])
+
+    dataset = tf.data.Dataset.from_tensor_slices((lr_paths, hr_paths)) # Should be <class 'str'>
+    dataset = dataset.map(load_image_pair, num_parallel_calls=tf.data.AUTOTUNE)
+
+    if shuffle:
+        dataset = dataset.shuffle(buffer_size=len(lr_paths))
+
+    dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
+    return dataset
