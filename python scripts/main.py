@@ -9,7 +9,7 @@ if __name__ == "__main__":
     # only load dataset if not already
     if not Path("dataset").exists():
         print("creating dataset...")
-        generate_dataset.create_dataset(IMG_SIZE, 8, 2)
+        generate_dataset.create_dataset(IMG_SIZE, 80, 20)
         print("successfully created dataset")
     else:
         print("dataset already exists, skipping download...")
