@@ -1,0 +1,5 @@
+1. 
+2. build a simple GUI where inputs can be chosen and 
+   a test window opens for a user to upload their own image 
+   to try the model on after training
+3. include plot of epochs and train/val accuracy plot

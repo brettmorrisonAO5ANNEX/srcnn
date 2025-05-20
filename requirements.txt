@@ -5,3 +5,4 @@ tensorflow-datasets
 opencv-python
 tqdm
 requests
+streamlit

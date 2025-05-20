@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from keras import models, layers
 
-def create_model():
+def create_model(optimizer='adam', loss='mean_squared_error'):
     model = models.Sequential()
     # Input layer
     model.add(layers.Input(shape=(None, None, 3)))
@@ -14,7 +14,7 @@ def create_model():
     model.add(layers.Conv2D(3, (5, 5), activation='linear', padding='same'))
 
     # compile and return model
-    model.compile(optimizer='adam', loss='mean_squared_error', metrics=['accuracy'])
+    model.compile(optimizer=optimizer, loss=loss, metrics=['accuracy'])
     return model
 
 def test_model(img_path):
