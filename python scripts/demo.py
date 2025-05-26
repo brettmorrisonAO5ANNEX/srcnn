@@ -6,6 +6,11 @@ import generate_dataset
 import srcnn
 import test_model
 
+st.set_page_config(
+    page_title="Super Resolution Demo",
+    layout="wide"
+)
+
 # Parameters Sidebar
 st.sidebar.title("Training Parameters")
 img_size = st.sidebar.number_input("Training Image Size", min_value=64, max_value=512, value=256, step=32)
@@ -24,4 +29,5 @@ with tab1:
         output_log = st.container(height=300, border=True)
     with col2:
         # Buttons
-
+        create_dataset_button = st.button("Create Dataset")
+        train_model_button = st.button("Train Model")
