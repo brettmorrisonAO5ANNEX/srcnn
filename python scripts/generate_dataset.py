@@ -4,6 +4,7 @@ import cv2
 import random
 from tqdm import tqdm
 import tensorflow as tf
+import shutil
 
 # creates an image dataset of the following structure
 # dataset
@@ -15,53 +16,53 @@ import tensorflow as tf
 #   - LR
 # with an 80/20 split
 
-def create_dataset(size, train_count, val_count):
-    # root
-    dataset_dir = Path("dataset")
+def create_dataset(size, train_count, val_count, train_progress=None, val_progress=None, log_callback=None):
+    dataset_dir = Path("../dataset")
     dataset_dir.mkdir(exist_ok=True)
 
-    # test set
+    # Train dirs
     train_dir = dataset_dir / "train"
     train_hr_dir = train_dir / "HR"
     train_lr_dir = train_dir / "LR"
-    train_dir.mkdir(parents=True, exist_ok=True)
     train_hr_dir.mkdir(parents=True, exist_ok=True)
     train_lr_dir.mkdir(parents=True, exist_ok=True)
 
-    # validation set
+    # Val dirs
     val_dir = dataset_dir / "val"
     val_hr_dir = val_dir / "HR"
     val_lr_dir = val_dir / "LR"
-    val_dir.mkdir(parents=True, exist_ok=True)
     val_hr_dir.mkdir(parents=True, exist_ok=True)
     val_lr_dir.mkdir(parents=True, exist_ok=True)
-    
-    # url for square image request from picsum
+
     base_url = f"https://picsum.photos/{size}"
 
-    # load training data
-    load_subset(train_count, base_url, train_hr_dir, train_lr_dir, size)
-    
-    # load validation data
-    load_subset(val_count, base_url, val_hr_dir, val_lr_dir, size)
-    return
+    # Train
+    load_subset(train_count, base_url, train_hr_dir, train_lr_dir, size, progress_callback=train_progress, log_callback=log_callback)
 
-def load_subset(count, base_url, hr_dir, lr_dir, size):
-    for i in tqdm(range(count), desc="Downloading images", unit="img"):
+    # Vald
+    load_subset(val_count, base_url, val_hr_dir, val_lr_dir, size, progress_callback=val_progress, log_callback=log_callback)
+
+
+def load_subset(count, base_url, hr_dir, lr_dir, size, progress_callback=None, log_callback=None):
+    for i in range(count):
         try:
             response = requests.get(base_url, timeout=10)
             if response.status_code == 200:
                 file_path = hr_dir / f"{i:04d}_HR.jpg"
 
-                # save HR to dataset/HR
+                # Save HR image
                 with open(file_path, "wb") as f:
                     f.write(response.content)
 
-                # save LR to dataset/LR
+                # Save LR image
                 pixelate(file_path, lr_dir, i, size)
 
         except Exception as e:
-            tqdm.write(f"Error downloading image {i+1}: {e}")
+            if log_callback:
+                log_callback(f"error downloading image {i+1}: {e}")
+        finally:
+            if progress_callback:
+                progress_callback(i + 1, count)
 
 def pixelate(img_path, lr_dir, index, size):
     hr = cv2.imread(str(img_path))  
@@ -107,3 +108,9 @@ def get_dataset(lr_dir, hr_dir, batch_size=8, shuffle=True):
 
     dataset = dataset.batch(batch_size).prefetch(tf.data.AUTOTUNE)
     return dataset
+
+def clear_dataset():
+    dataset_dir = Path("../dataset")
+    if dataset_dir.exists():
+        shutil.rmtree(dataset_dir)
+

@@ -46,30 +46,4 @@ def run_test(img_path, model, size):
     sr_img = np.clip(sr_img, 0, 1)
     sr_img = (sr_img * 255).astype(np.uint8)
 
-    # Plot LR input and SR output side by side
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 3, 1)
-    plt.title("Original (HR)")
-    plt.imshow(img_rgb)
-    plt.axis('off')
-
-    plt.subplot(1, 3, 2)
-    plt.title("Pixelated (LR) Input")
-    plt.imshow(lr_img)
-    plt.axis('off')
-
-    plt.subplot(1, 3, 3)
-    plt.title("Super-Resolved Output")
-    plt.imshow(sr_img)
-    plt.axis('off')
-
-    # Create results directory if it doesn't exist
-    results_dir = "results"
-    os.makedirs(results_dir, exist_ok=True)
-
-    # Save figure to results folder with a filename based on input image name
-    base_name = os.path.basename(img_path)
-    save_path = os.path.join(results_dir, f"result_{base_name}.png")
-    plt.savefig(save_path)
-
-    plt.show()
+    return img_rgb, lr_norm, sr_img
