@@ -5,13 +5,21 @@ from pathlib import Path
 import generate_dataset
 import srcnn
 import test_model
+import custom_loss
 import matplotlib.pyplot as plt
+
+# initialize session state variables
+if "dataset_ready" not in st.session_state:
+    st.session_state.dataset_ready = False
+if "model_ready" not in st.session_state:
+    st.session_state.model_ready = False
+if "training_finished" not in st.session_state:
+    st.session_state.training_finished = False
 
 # load css styliing
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-
 local_css("../styles/streamlit.css")
 
 # Parameters Sidebar
@@ -21,14 +29,15 @@ train_count = st.sidebar.number_input("Num Training Samples", min_value=10, valu
 val_count = st.sidebar.number_input("Num Validation Samples", min_value=10, value=20, step=10)
 epochs = st.sidebar.slider("Epochs", min_value=1, max_value=50, value=10)
 batch_size = st.sidebar.selectbox("Batch Size", [4, 8, 16, 32], index=1)
-optimizer = st.sidebar.selectbox("Optimizer", ["adam"])
-loss = st.sidebar.selectbox("Loss Function", ["mean_squared_error"])
+optimizer = st.sidebar.selectbox("Optimizer", ["adam", "rmsprop", "sgd"], index=0)
+loss = st.sidebar.selectbox("Loss Function", ["mean_squared_error", "mean_absolute_error", 
+                                               "huber_loss", "ssim"], index=0)
 
 # Tabs
 tab1, tab2, tab3, tab4 = st.tabs(["Output Log", "Model Performance", "Test Output", "Preview Dataset"])
 with tab1:
-    output_log = st.container(height=300, border=True)
-                
+    output_log = st.container(height=600, border=True)
+
 with tab2:
     # Check that all required metrics are available
     has_loss = "train_loss" in st.session_state and "val_loss" in st.session_state
@@ -73,7 +82,7 @@ with tab2:
                     st.pyplot(fig_acc)
 
     else:
-        st.warning("No performance data found, train  model first")
+        st.warning("No performance data available, train model first")
 
 with tab3:
     if "hr_img" in st.session_state and "lr_img" in st.session_state and "sr_img" in st.session_state:
@@ -103,7 +112,7 @@ with tab4:
         image_files = sorted([f for f in folder_path.iterdir() if f.suffix.lower() in [".png", ".jpg", ".jpeg"]])
 
         if not image_files:
-            st.info("No images found in selected folder")
+            st.warning("No images found in the selected folder")
         else:
             # Slider for number of images per page
             images_per_page = st.slider("Images per page", min_value=4, max_value=40, value=12, step=4)
@@ -128,13 +137,20 @@ with tab4:
 
 # Control buttons
 st.sidebar.markdown("---")
+if st.sidebar.button("Refresh Session"):
+    with output_log: 
+        generate_dataset.clear_dataset()
+        st.session_state.clear() 
+        st.success("Session refreshed. All data cleared.")
+
 if st.sidebar.button("Generate Dataset"):
-    if not Path("../dataset").exists():
-        with output_log:
+    with output_log:
+        if not st.session_state.dataset_ready:
             st.write("\>> Creating dataset")
+
             # Initialize progress bars
-            train_prog = st.progress(0, text="Downloading training set:")
-            val_prog = st.progress(0, text="Downloading validation set:")
+            train_prog = st.progress(0, text=f"Downloading training set: 0%")
+            val_prog = st.progress(0, text=f"Downloading validation set: 0%")
 
             # Progress update functions
             def update_train_progress(current, total):
@@ -143,28 +159,33 @@ if st.sidebar.button("Generate Dataset"):
             def update_val_progress(current, total):
                 val_prog.progress(current / total, text=f"Downloading validation set: {int((current / total)*100)}%")
 
-            # Log message function
-            def log(msg):
-                st.write(msg)
+            def log_message(message):
+                st.write(message)
 
-            generate_dataset.create_dataset(
-                img_size, train_count, val_count,
-                train_progress=update_train_progress,
-                val_progress=update_val_progress,
-                log_callback=log
-            )
-            st.session_state.dataset = True
-            st.success("Download complete!")
-    else:
-        with output_log:
-            st.info("Dataset already exists, skip to training")
+            try:
+                generate_dataset.create_dataset(
+                    img_size, train_count, val_count,
+                    train_progress=update_train_progress,
+                    val_progress=update_val_progress,
+                    log_callback=log_message
+                )
+
+                st.session_state.dataset_ready = True
+                st.success("Dataset ready!.")
+
+            except Exception as e:
+                st.error(f"Error generating dataset: {e}")
+        else:
+            st.info("Dataset already generated. Skipping.")
 
 if st.sidebar.button("Train Model"):
-    if "dataset" in st.session_state:
-        with output_log:
+    with output_log:
+        if st.session_state.dataset_ready:
             st.write("\>> Creating model")
             try:
-                model = srcnn.create_model(optimizer=optimizer, loss=loss)
+                model = srcnn.create_model(optimizer=optimizer, loss=custom_loss.ssim if loss == "ssim" else loss)
+                st.session_state.model = model
+                st.session_state.model_ready = True
             except Exception as e:
                 st.error(f"Error creating model: {e}")
                 st.stop()
@@ -173,14 +194,15 @@ if st.sidebar.button("Train Model"):
             try:
                 ds_train = generate_dataset.get_dataset("../dataset/train/LR", "../dataset/train/HR", batch_size=batch_size)
                 ds_val = generate_dataset.get_dataset("../dataset/val/LR", "../dataset/val/HR", batch_size=batch_size)
+                st.session_state.ds_train = ds_train
+                st.session_state.ds_val = ds_val
+                st.session_state.img_size = img_size
             except Exception as e:
                 st.error(f"Error loading datasets: {e}")
                 st.stop()
 
             st.write("\>> Training model")
-            # Progress and status elements
             try:
-                # Store history
                 train_loss_history = []
                 val_loss_history = []
                 train_acc_history = []
@@ -206,44 +228,40 @@ if st.sidebar.button("Train Model"):
                             st.write(f"validation accuracy: {val_acc:.4f}")
                         else:
                             st.write("accuracy metrics not available in history")
+
+                st.session_state.train_loss = train_loss_history
+                st.session_state.val_loss = val_loss_history
+                st.session_state.train_acc = train_acc_history
+                st.session_state.val_acc = val_acc_history
+                st.session_state.training_finished = True
+
                 st.success("Training complete!")
 
             except Exception as e:
                 st.error(f"Error during training: {e}")
                 st.stop()
 
-            # Save model to session state
-            st.session_state.model = model
-            st.session_state.img_size = img_size
-            st.session_state.train_loss = train_loss_history
-            st.session_state.val_loss = val_loss_history
-            st.session_state.train_acc = train_acc_history
-            st.session_state.val_acc = val_acc_history
-    else:
-        with output_log:
-            st.error("Please generate dataset first")
+        else:
+            st.warning("Please generate dataset first")
 
 if st.sidebar.button("Test Model"):
-    if "model" in st.session_state:
-        try:
-            hr_test, lr_test, sr_test = test_model.run_test(
-                "../willy.JPG", 
-                st.session_state.model, 
-                st.session_state.img_size
-            )
-
-            st.session_state.hr_img = hr_test
-            st.session_state.lr_img = lr_test
-            st.session_state.sr_img = sr_test
-
-        except Exception as e:
-            st.error(f"Error during model test: {e}")
-    else:
-        with output_log:
-            st.error("Please train model first")
-
-if st.sidebar.button("Refresh Session"):
     with output_log:
-        generate_dataset.clear_dataset()
-        st.session_state.clear()  # Clear session state
-        st.success("Session refreshed, please create dataset and train model again")
+        if st.session_state.training_finished:
+            try:
+                hr_test, lr_test, sr_test = test_model.run_test(
+                    "../willy.JPG", 
+                    st.session_state.model, 
+                    st.session_state.img_size
+                )
+
+                st.session_state.hr_img = hr_test
+                st.session_state.lr_img = lr_test
+                st.session_state.sr_img = sr_test
+
+                st.session_state.test_ready = True
+                st.success("Model testing complete!")
+
+            except Exception as e:
+                st.error(f"Error during model test: {e}")
+        else:
+            st.warning("Please train model first")

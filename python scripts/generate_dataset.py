@@ -60,6 +60,7 @@ def load_subset(count, base_url, hr_dir, lr_dir, size, progress_callback=None, l
         except Exception as e:
             if log_callback:
                 log_callback(f"error downloading image {i+1}: {e}")
+
         finally:
             if progress_callback:
                 progress_callback(i + 1, count)
