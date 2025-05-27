@@ -46,4 +46,4 @@ def run_test(img_path, model, size):
     sr_img = np.clip(sr_img, 0, 1)
     sr_img = (sr_img * 255).astype(np.uint8)
 
-    return img_rgb, lr_norm, sr_img
+    return img_rgb, lr_img, sr_img

@@ -1,5 +1,2 @@
-1. 
-2. build a simple GUI where inputs can be chosen and 
-   a test window opens for a user to upload their own image 
-   to try the model on after training
-3. include plot of epochs and train/val accuracy plot
+1. clear images and plots after refresh is pressed
+2. add fun custom art somehow
