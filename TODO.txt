@@ -1,4 +1,1 @@
-1. fix need to rerun weirdly
-2. add fun custom art somehow
-3. make plots better
-4. allow user to upload test img
+1. fix deploy bug
