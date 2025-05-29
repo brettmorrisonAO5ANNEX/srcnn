@@ -21,10 +21,10 @@ if "training_finished" not in st.session_state:
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-local_css("streamlit.css")
+local_css("assets/streamlit.css")
 
 # Parameters Sidebar
-st.sidebar.image("logo.png", use_container_width=True)
+st.sidebar.image("assets/logo.png", use_container_width=True)
 img_size = st.sidebar.number_input("Training Image Size", min_value=64, max_value=512, value=256, step=32)
 train_count = st.sidebar.number_input("Num Training Samples", min_value=1, value=80, step=10)
 val_count = st.sidebar.number_input("Num Validation Samples", min_value=1, value=20, step=10)
@@ -52,8 +52,7 @@ with tab1:
                         2. click `Generate Dataset` to generate a training and vaidation dataset
                         3. click `Train Model` to build and train the SRCNN model
                         4. upload a custom image for the model test if desired, or use the default image
-                        5. click `Test Model` to test the trained model on a sample image
-                        
+                        5. click `Test Model` to test the trained model on a sample image         
                     """)
         st.write("---")
 with tab2:
