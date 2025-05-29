@@ -21,7 +21,7 @@ if "training_finished" not in st.session_state:
 def local_css(file_name):
     with open(file_name) as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
-local_css("../styles/streamlit.css")
+local_css("../assets/streamlit.css")
 
 # Parameters Sidebar
 st.sidebar.image("../assets/logo.png", use_container_width=True)
