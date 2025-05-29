@@ -1,8 +1,8 @@
 numpy
 matplotlib
-tensorflow
+tensorflow==2.13.0
 tensorflow-datasets
-opencv-python
+opencv-python-headless
 tqdm
 requests
 streamlit
