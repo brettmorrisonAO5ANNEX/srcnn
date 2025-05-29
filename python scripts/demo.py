@@ -1,12 +1,13 @@
 import streamlit as st
 import cv2
 import numpy as np
-from pathlib import Path
 import generate_dataset
 import srcnn
 import test_model
 import custom_loss
 import matplotlib.pyplot as plt
+from pathlib import Path
+from time import sleep
 
 # initialize session state variables
 if "dataset_ready" not in st.session_state:
@@ -53,8 +54,8 @@ with tab2:
                 val_loss = st.session_state.val_loss
                 epochs = range(1, len(train_loss) + 1)
 
-                st.header("Loss vs Epoch")
                 fig_loss, ax1 = plt.subplots()
+                ax1.set_title("Training vs Validation Loss")
                 ax1.plot(epochs, train_loss, label='Train Loss', marker='o')
                 ax1.plot(epochs, val_loss, label='Validation Loss', marker='o')
                 ax1.set_xlabel("Epoch")
@@ -71,8 +72,8 @@ with tab2:
                 if any(v is not None for v in train_acc) and any(v is not None for v in val_acc):
                     epochs = range(1, len(train_acc) + 1)
 
-                    st.header("Accuracy vs Epoch")
                     fig_acc, ax2 = plt.subplots()
+                    ax2.set_title("Training vs Validation Accuracy")
                     ax2.plot(epochs, train_acc, label='Train Accuracy', marker='o')
                     ax2.plot(epochs, val_acc, label='Validation Accuracy', marker='o')
                     ax2.set_xlabel("Epoch")
@@ -141,7 +142,9 @@ if st.sidebar.button("Refresh Session"):
     with output_log: 
         generate_dataset.clear_dataset()
         st.session_state.clear() 
-        st.success("Session refreshed. All data cleared.")
+        st.success("Session refreshed. All state cleared.")
+        sleep(1)
+        st.rerun()
 
 if st.sidebar.button("Generate Dataset"):
     with output_log:
@@ -172,6 +175,8 @@ if st.sidebar.button("Generate Dataset"):
 
                 st.session_state.dataset_ready = True
                 st.success("Dataset ready!.")
+                sleep(1)
+                st.rerun()  # Refresh the app to update state
 
             except Exception as e:
                 st.error(f"Error generating dataset: {e}")
@@ -236,6 +241,8 @@ if st.sidebar.button("Train Model"):
                 st.session_state.training_finished = True
 
                 st.success("Training complete!")
+                sleep(1)
+                st.rerun()  # Refresh the app to update state
 
             except Exception as e:
                 st.error(f"Error during training: {e}")
@@ -260,6 +267,8 @@ if st.sidebar.button("Test Model"):
 
                 st.session_state.test_ready = True
                 st.success("Model testing complete!")
+                sleep(1)
+                st.rerun()  # Refresh the app to update state
 
             except Exception as e:
                 st.error(f"Error during model test: {e}")
