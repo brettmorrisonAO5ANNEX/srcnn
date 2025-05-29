@@ -22,12 +22,9 @@ def crop_center(img, size):
     cropped = img[top:top+size, left:left+size]
     return cropped
 
-def run_test(img_path, model, size):
+def run_test(image, model, size):
     # Load and crop image to size x size
-    img = cv2.imread(img_path)
-    if img is None:
-        raise ValueError(f"Failed to load image: {img_path}")
-    img = crop_center(img, size)
+    img = crop_center(image, size)
 
     # Convert BGR (cv2 default) to RGB for plotting & model input
     img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)

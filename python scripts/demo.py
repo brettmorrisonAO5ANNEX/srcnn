@@ -24,10 +24,10 @@ def local_css(file_name):
 local_css("../styles/streamlit.css")
 
 # Parameters Sidebar
-st.sidebar.title("Training Parameters")
+st.sidebar.image("../assets/logo.png", use_container_width=True)
 img_size = st.sidebar.number_input("Training Image Size", min_value=64, max_value=512, value=256, step=32)
-train_count = st.sidebar.number_input("Num Training Samples", min_value=10, value=80, step=10)
-val_count = st.sidebar.number_input("Num Validation Samples", min_value=10, value=20, step=10)
+train_count = st.sidebar.number_input("Num Training Samples", min_value=1, value=80, step=10)
+val_count = st.sidebar.number_input("Num Validation Samples", min_value=1, value=20, step=10)
 epochs = st.sidebar.slider("Epochs", min_value=1, max_value=50, value=10)
 batch_size = st.sidebar.selectbox("Batch Size", [4, 8, 16, 32], index=1)
 optimizer = st.sidebar.selectbox("Optimizer", ["adam", "rmsprop", "sgd"], index=0)
@@ -38,7 +38,24 @@ loss = st.sidebar.selectbox("Loss Function", ["mean_squared_error", "mean_absolu
 tab1, tab2, tab3, tab4 = st.tabs(["Output Log", "Model Performance", "Test Output", "Preview Dataset"])
 with tab1:
     output_log = st.container(height=600, border=True)
-
+    with output_log:
+        st.info("Welcome to the SRCNN Demo!")
+        st.markdown("""
+                        For more infomation, check out my video series on YouTube:
+                    
+                        - [Part 1: Intro](https://youtu.be/mkUhGvbmhSI?si=FUhbOtpsg4SGqRoh)
+                        - [Part 2: Theory](https://youtu.be/qZcBXYQLLyQ?si=YJzQ2swBXg-BZy1-)
+                        - coming soon
+                    
+                        Demo Instructions:
+                        1. choose parameters in the sidebar
+                        2. click `Generate Dataset` to generate a training and vaidation dataset
+                        3. click `Train Model` to build and train the SRCNN model
+                        4. upload a custom image for the model test if desired, or use the default image
+                        5. click `Test Model` to test the trained model on a sample image
+                        
+                    """)
+        st.write("---")
 with tab2:
     # Check that all required metrics are available
     has_loss = "train_loss" in st.session_state and "val_loss" in st.session_state
@@ -227,12 +244,12 @@ if st.sidebar.button("Train Model"):
                     val_acc_history.append(val_acc)
 
                     with st.container(border=True):
-                        st.write(f"Epoch {i+1}/{epochs} complete")
+                        st.success(f"Epoch {i+1}/{epochs} complete")
                         if train_acc is not None and val_acc is not None:
-                            st.write(f"training accuracy: {train_acc:.4f}")
-                            st.write(f"validation accuracy: {val_acc:.4f}")
+                            st.write(f"Training accuracy: {train_acc:.4f}")
+                            st.write(f"Validation accuracy: {val_acc:.4f}")
                         else:
-                            st.write("accuracy metrics not available in history")
+                            st.write("AAccuracy metrics not available in history")
 
                 st.session_state.train_loss = train_loss_history
                 st.session_state.val_loss = val_loss_history
@@ -251,12 +268,30 @@ if st.sidebar.button("Train Model"):
         else:
             st.warning("Please generate dataset first")
 
+if st.sidebar.file_uploader("Upload Custom Test Image", type=["jpg", "jpeg", "png"]):
+    uploaded_file = st.sidebar.file_uploader("Upload Image", type=["jpg", "jpeg", "png"])
+    if uploaded_file is not None:
+        try:
+            # Read the image file
+            img = cv2.imdecode(np.frombuffer(uploaded_file.read(), np.uint8), cv2.IMREAD_COLOR)
+            img_rgb = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+            st.session_state.uploaded_img = img_rgb
+            st.image(img_rgb, caption="Uploaded Image", use_container_width=True)
+        except Exception as e:
+            st.error(f"Error reading image: {e}")
+
 if st.sidebar.button("Test Model"):
     with output_log:
         if st.session_state.training_finished:
             try:
+                # use custom test image if available, otherwise use default
+                if "uploaded_img" in st.session_state:
+                    test_image = st.session_state.uploaded_img
+                else: 
+                    test_image = cv2.imread("../assets/willy.JPG", cv2.IMREAD_COLOR)
+
                 hr_test, lr_test, sr_test = test_model.run_test(
-                    "../willy.JPG", 
+                    test_image, 
                     st.session_state.model, 
                     st.session_state.img_size
                 )
